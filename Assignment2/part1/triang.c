@@ -1,31 +1,5 @@
-#include <stdio.h>
 #include <stdlib.h>
-
-/*int element(int n, int k) {
-    int product = 1;
-    if (k > (n - k)) {
-        k = n - k;
-    }
-    for (int i = 1; i <= k; i ++) {
-        product *= (n+1-i)/(i);
-    }
-    return product;
-}
-
-int main(int argc, char *argv[]) {
-    int i, j;
-    int el;
-    int n = atoi(argv[1]);
-
-    for (i = 0; i < n; i++) {
-        for (j = 0; j <= i; j++) {
-            el = element(i,j);
-            printf("%d", el);
-        }
-        printf("\n");
-    }
-
-}*/
+#include <stdio.h>
 
 int main(int argc, char *argv[]) {
     int n = atoi(argv[1]);
@@ -48,4 +22,10 @@ int main(int argc, char *argv[]) {
         }
         printf("\n");
     }
+    for (int i = 0; i < n; i++) {
+        free(triangle[i]);
+        triangle[i] = NULL;
+    }
+    free(triangle);
+    triangle = NULL;
 }
