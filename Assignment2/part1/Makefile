@@ -1,5 +1,5 @@
-pascal:
-	gcc -Wall -o pascal pascal.c
+triang:
+	gcc -Wall -o triang triang.c
 
 clean:
-	rm -f pascal
+	rm -f triang
