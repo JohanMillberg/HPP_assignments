@@ -10,10 +10,13 @@ int main(int argc, char *argv[]) {
         triangle[i] = (int *) malloc((i+1)*sizeof(int)); // Allocates memory for each row (array)
 
         for (int j = 0; j <= i; j++) {
+
             if (i == 0 || j == 0) {
                 temp = 1;
                 triangle[i][j] = temp;
             }
+
+            // Calculates the binomial coefficients
             else {
                 temp = temp * (i - j + 1)/j;
                 triangle[i][j] = temp;
@@ -22,6 +25,7 @@ int main(int argc, char *argv[]) {
         }
         printf("\n");
     }
+    // Frees memory to prevent memory leaks
     for (int i = 0; i < n; i++) {
         free(triangle[i]);
         triangle[i] = NULL;
