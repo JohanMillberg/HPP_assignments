@@ -1,4 +1,4 @@
-pascal.o:
+pascal:
 	gcc -Wall -c pascal.c
 
 clean:
