@@ -80,7 +80,7 @@ void delete_node(node_t **head_ptr, int index) {
     }
 
     if (curr == NULL) {
-        printf("Index not in database.");
+        printf("Index not in database.\n");
         return;
     }
     else {
