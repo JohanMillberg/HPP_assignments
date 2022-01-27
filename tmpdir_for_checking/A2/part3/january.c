@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <math.h>
 
 typedef struct node {
     int index;
@@ -116,18 +116,35 @@ void delete_all(node_t **head_ptr) {
 
 int main() {
     int run = 1;
-    int index;
+    int index, read_input;
     double min, max;
     char command;
     node_t *head = NULL;
 
     do {
         printf("Enter command: ");
-        scanf(" %c", &command);
+        read_input = scanf(" %c", &command);
+
+        if (read_input != 1) {
+            printf("Invalid type in command. First argument must be a char.\n");
+            continue;
+        }
+
         if (command == 'A' || command == 'D'){
-            scanf("%d", &index);
+            read_input = scanf("%d", &index);
+
+            if (read_input != 1 || index < 1 || index > 31) {
+                printf("Invalid input in index. Index must be an integer between 1 and 31.\n");
+                continue;
+            }
+
             if (command == 'A') {
-                scanf("%lf %lf", &min, &max);
+                read_input = scanf("%lf %lf", &min, &max);
+
+                if (read_input != 2 || isnan(min) || isnan(max)) {
+                    printf("Invalid input in min and max. Min and max must be real doubles.\n");
+                    continue;
+                }
             }
         }
         switch (command) {
@@ -150,7 +167,7 @@ int main() {
                 break;
             }
             default: {
-                printf("Invalid command.");
+                printf("Invalid command.\n");
             }
         }
     } while (run);
