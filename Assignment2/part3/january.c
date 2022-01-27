@@ -8,6 +8,9 @@ typedef struct node {
     struct node *next;
 } node_t;
 
+/*
+    Creates a node using the given data
+*/
 node_t* create_node(int index, double min, double max) {
     node_t *node = malloc(sizeof(node_t));
     node->index = index;
@@ -17,6 +20,10 @@ node_t* create_node(int index, double min, double max) {
     return node;
 }
 
+/*
+    Function used to insert nodes into the linked list. The function also sorts the linked list
+    automatically, by comparing the integers indices.
+*/
 void insert(node_t **head_ptr, node_t *node) {
     if (*head_ptr == NULL || node->index < (*head_ptr)->index) {
         node->next = *head_ptr;
@@ -28,18 +35,56 @@ void insert(node_t **head_ptr, node_t *node) {
     }
     else {
         node_t *curr = *head_ptr;
-        while (curr->next != NULL && curr->next->index < node->index) {
+        while (curr->next != NULL && curr->next->index <= node->index) {
             curr = curr->next;
         }
-        node->next = curr->next;
-        curr->next = node;
+        if (curr->index != node->index) {
+            node->next = curr->next;
+            curr->next = node;
+        }
+        else {
+            curr->min = node->min;
+            curr->max = node->max;
+        }
     }
 }
 
-void delete_node(node_t *head_ptr, int index) {
-    node_t *curr = head_ptr;
+/*
+    Function used to delete a specific node given by its index.
+*/
+void delete_node(node_t **head_ptr, int index) {
+    node_t *curr = *head_ptr;
+    node_t *temp;
+
+    if (curr == NULL) {
+        printf("Database is empty. \n");
+        return;
+    }
+
+    if (curr != NULL && curr->index == index) {
+        *head_ptr = curr->next;
+        free(curr);
+        return;
+    }
+
+    while (curr != NULL && curr->index != index) {
+        temp = curr;
+        curr = curr->next;
+    }
+
+    if (curr == NULL) {
+        printf("Index not in database.");
+        return;
+    }
+    else {
+        temp->next = curr->next;
+        free(curr);
+    }
 }
 
+/*
+    Prints the linked list in a formatted way.
+*/
 void print(node_t *head_ptr) {
     node_t *curr = head_ptr;
     if (curr == NULL) {
@@ -51,6 +96,21 @@ void print(node_t *head_ptr) {
             printf("%d \t %lf \t %lf\n", curr->index, curr->min, curr->max);
             curr = curr->next;
         }
+    }
+}
+
+/*
+    Deletes all remaining nodes as the program is closed.
+*/
+void delete_all(node_t **head_ptr) {
+    node_t *prev = *head_ptr;
+    node_t *curr;
+
+    while (prev != NULL) {
+        curr = prev->next;
+        free(prev);
+        prev = curr;
+
     }
 }
 
@@ -77,7 +137,7 @@ int main() {
                 break;
             }
             case 'D': {
-                printf("D\n");
+                delete_node(&(head), index);
                 break;
             }
             case 'P': {
@@ -86,7 +146,11 @@ int main() {
             }
             case 'Q': {
                 run = 0;
+                delete_all(&(head));
                 break;
+            }
+            default: {
+                printf("Invalid command.");
             }
         }
     } while (run);
