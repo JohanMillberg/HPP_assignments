@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
 
     particle_t *particle = (particle_t*)malloc(N*sizeof(particle_t));
     particle_t *particle_new = (particle_t*)malloc(N*sizeof(particle_t));
+    particle_t *temp;
 
     set_initial_data(N, &particle, filename);
     set_initial_data(N, &particle_new, filename);
@@ -102,12 +103,17 @@ int main(int argc, char *argv[]) {
             particle_new[i].pos_y = particle[i].pos_y + delta_t*particle_new[i].vel_y;
 
         }
+        temp = particle;
+        particle = particle_new;
+        particle_new = temp;
+        /*
         for(int k = 0; k < N; k++) {
             particle[k].vel_x = particle_new[k].vel_x;
             particle[k].vel_y = particle_new[k].vel_y;
             particle[k].pos_x = particle_new[k].pos_x;
             particle[k].pos_y = particle_new[k].pos_y;
         }
+        */
     }
     if (graphics == 1) {
         FlushDisplay();
