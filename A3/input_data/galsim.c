@@ -29,6 +29,7 @@ void set_initial_data(int N, particle_t** particle, const char* filename) {
         (*particle)[i].vel_y = buffer[i*6 + 4];
         (*particle)[i].brightness = buffer[i*6 + 5];
     }
+    fclose(file);
 }
 
 void Force(int N, int i, particle_t *particle, double arr[]) {
