@@ -36,19 +36,21 @@ void Force(int N, int i, particle_t *particle, double arr[]) {
     double F_const, r, r2, denom;
     double Fx = 0; double Fy = 0;
     double r_x, r_y;
-    const double G = -100/N;
+    const double G = (double) -100/N; // Extremely important to cast to double
     const double eps_0 = 0.001;
 
-    for (int j = 0; j < (N-1); j++) {
-        r_x = particle[i].pos_x - particle[j].pos_x;
-        r_y = particle[j].pos_y - particle[j].pos_y;
-        r2 = r_x*r_x + r_y*r_y;
-        r = sqrt(r2);
+    for (int j = 0; j < N; j++) {
+        if (i != j) {
+            r_x = particle[i].pos_x - particle[j].pos_x;
+            r_y = particle[i].pos_y - particle[j].pos_y;
+            r2 = r_x*r_x + r_y*r_y;
+            r = sqrt(r2);
 
-        denom = (r + eps_0)*(r + eps_0)*(r + eps_0);
-        F_const = G*particle[i].mass * (particle[j].mass/denom);
-        Fx += F_const*(particle[i].pos_x - particle[j].pos_x);
-        Fy += F_const*(particle[i].pos_y - particle[j].pos_y);
+            denom = (r + eps_0)*(r + eps_0)*(r + eps_0);
+            F_const = G*particle[i].mass * (particle[j].mass/denom);
+            Fx += F_const*(r_x);
+            Fy += F_const*(r_y);
+        }
     }
     arr[0] = Fx;
     arr[1] = Fy;
@@ -66,7 +68,6 @@ int main(int argc, char *argv[]) {
     const int windowWidth=800;
 
     // Set constants
-    const double T = nsteps*delta_t;
     double Fx, Fy;
 
     particle_t *particle = (particle_t*)malloc(N*sizeof(particle_t));
@@ -80,14 +81,14 @@ int main(int argc, char *argv[]) {
         SetCAxes(0,1);
     }
 
-    for(double t = 0; t < T; t+=delta_t) {
+    for(int t = 0; t < nsteps; t++) {
         if (graphics == 1) {
             ClearScreen();
             for (int l = 0; l < N; l++) {
                 DrawCircle(particle[l].pos_x, particle[l].pos_y, 1, 1, particle[l].mass*0.001, 0);
             }
             Refresh();
-            usleep(500);
+            usleep(2000);
         }
         for (int i = 0; i < N; i++) {
             double arr[2];
@@ -129,10 +130,6 @@ int main(int argc, char *argv[]) {
         buffer[6*k + 3] = particle[k].vel_x;
         buffer[6*k + 4] = particle[k].vel_y;
         buffer[6*k + 5] = particle[k].brightness;
-    }
-
-    for(int i = 0; i < N; i++) {
-        printf("%lf\n", particle[i].pos_x);
     }
 
     FILE *ptr;
