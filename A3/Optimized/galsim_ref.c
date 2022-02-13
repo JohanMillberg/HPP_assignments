@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "graphics.h"
-#include <sys/time.h>
 
 typedef struct particle {
     double pos_x, pos_y, vel_x, vel_y, mass, brightness;
@@ -30,8 +29,8 @@ void set_initial_data(int N, particle_t** particle, const char* filename) {
         (*particle)[i].vel_y = buffer[i*6 + 4];
         (*particle)[i].brightness = buffer[i*6 + 5];
     }
-    fclose(file);
-}
+    fclo
+
 double get_timings() {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -44,7 +43,7 @@ void Force(int N, int i, particle_t *particle, double arr[]) {
     double F_const, r, r2, denom;
     double Fx = 0; double Fy = 0;
     double r_x, r_y;
-    const double G = (double) -100.0/N; // Extremely important to cast to double
+    const double G = (double) -100/N; // Extremely important to cast to double
     const double eps_0 = 0.001;
 
     for (int j = 0; j < N; j++) {
