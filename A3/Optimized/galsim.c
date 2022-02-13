@@ -40,57 +40,67 @@ int main(int argc, char *argv[]) {
 
     // Declare variables
     double F_x, F_y, F_const;
-    double r_x, r_y, r, r2;
+    double r_x, r_y, r;
+    double x, y, mass;
     double denom;
     const double G = (double) -100.0 / N;
     const double eps_0 = 0.001;
 
     double *particles = (double*) malloc(N*sizeof(double)*6);
-    double *particles_new = (double*) malloc(N*sizeof(double)*6);
-    double *temp;
+
+    double *forces = (double*) malloc(2*N*sizeof(double));
 
     set_initial_data(N, &particles, filename);
-    memcpy(particles_new, particles, N*sizeof(double)*6);
 
     if (graphics == 1) {
         InitializeGraphics(argv[0],windowWidth,windowWidth);
         SetCAxes(0,1);
     }
-
-    for (int t = 0; t < nsteps; t++) {
+    int t;
+    int l;
+    int i;
+    int j;
+    for (t = 0; t < nsteps; t++) {
         if (graphics == 1) {
             ClearScreen();
-            for (int l = 0; l < N; l++) {
+            for (l = 0; l < N; l++) {
                 DrawCircle(particles[l*6+0], particles[l*6+1], 1, 1, particles[l*6+2]*0.001, 0);
             }
             Refresh();
             usleep(2000);
         }
-        for (int i = 0; i < N; i++) {
-            F_x = 0;
-            F_y = 0;
-            for (int j = 0; j < N; j++) {
-                if (i != j) {
-                    r_x = particles[i*6 + 0] - particles[j*6 + 0];
-                    r_y = particles[i*6 + 1] - particles[j*6 + 1];
-                    r2 = r_x*r_x + r_y*r_y;
-                    r = sqrt(r2);
-
-                    denom = (r + eps_0)*(r + eps_0)*(r + eps_0);
-                    F_const = G * particles[i*6 + 2] * (particles[j*6 + 2]/denom);
-                    F_x += F_const * r_x;
-                    F_y += F_const * r_y;
-                }
-            }
-            particles_new[i*6 + 3] = particles[i*6 + 3] + delta_t*(F_x/particles[i*6 + 2]);
-            particles_new[i*6 + 4] = particles[i*6 + 4] + delta_t*(F_y/particles[i*6 + 2]);
-
-            particles_new[i*6 + 0] = particles[i*6 + 0] + delta_t*particles_new[i*6 + 3];
-            particles_new[i*6 + 1] = particles[i*6 + 1] + delta_t*particles_new[i*6 + 4];
+        for (l = 0; l < 2*N; l++) {
+            forces[l] = 0;
         }
-        temp = particles;
-        particles = particles_new;
-        particles_new = temp;
+
+        for (i = 0; i < N; i++) {
+            x = particles[i*6];
+            y = particles[i*6 + 1];
+            mass = particles[i*6 + 2];
+
+            for (j = i; j < N; j++) {
+                r_x = x - particles[j*6 + 0];
+                r_y = y - particles[j*6 + 1];
+                r = sqrt(r_x*r_x + r_y*r_y);
+
+                denom = (r + eps_0)*(r + eps_0)*(r + eps_0);
+                F_const = G * mass * (particles[j*6 + 2]/denom);
+                F_x = F_const * r_x;
+                F_y = F_const * r_y;
+
+                forces[i*2 + 0] += F_x;
+                forces[i*2 + 1] += F_y;
+                forces[j*2 + 0] += -F_x;
+                forces[j*2 + 1] += -F_y;
+
+            }
+            particles[i*6 + 3] = particles[i*6 + 3] + delta_t*(forces[i*2+0]/particles[i*6 + 2]);
+            particles[i*6 + 4] = particles[i*6 + 4] + delta_t*(forces[i*2+1]/particles[i*6 + 2]);
+
+            particles[i*6 + 0] = particles[i*6 + 0] + delta_t*particles[i*6 + 3];
+            particles[i*6 + 1] = particles[i*6 + 1] + delta_t*particles[i*6 + 4];
+
+        }
     }
 
     if (graphics == 1) {
@@ -105,7 +115,7 @@ int main(int argc, char *argv[]) {
     fclose(ptr);
 
     free(particles);
-    free(particles_new);
+    free(forces);
     printf("Galsim program took %7.3f wall seconds.\n", get_timings() - time);
     return 0;
 
