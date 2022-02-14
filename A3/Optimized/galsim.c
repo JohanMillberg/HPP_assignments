@@ -110,8 +110,10 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
-        for (l = 0; l < 2*N; l++) {
-            forces[l] = 0;
+        else {
+            for (l = 0; l < 2*N; l++) {
+                forces[l] = 0;
+            }
         }
 
         for (i = 0; i < N; i++) {
