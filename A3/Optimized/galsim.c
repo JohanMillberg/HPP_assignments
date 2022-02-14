@@ -10,25 +10,35 @@
 Method of reading data from .gal files was inspired by the function read_doubles_from_file
 in the given compare_gal_files.c
 */
-void set_initial_data(int N, double** particles, const char* filename) {
+int set_initial_data(int N, double** particles, const char* filename) {
     FILE* file = fopen(filename, "rb");
+    if (!file) return 0;
     fseek(file, 0L, SEEK_END);
-    size_t fileSize = ftell(file);
+    size_t file_size = ftell(file);
+    if (file_size != 6*N*sizeof(double)) return 0;
     fseek(file, 0L, SEEK_SET);
 
-    fread(*particles, sizeof(char), fileSize, file);
+    fread(*particles, sizeof(char), file_size, file);
 
     fclose(file);
+    return 1;
 }
 
+/*
+get_timings() was inspired by the function get_wall_seconds() from Task 4 in Lab 5
+*/
 double get_timings() {
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    double seconds = tv.tv_sec + (double)tv.tv_usec / 1000000;
-    return seconds;
+    double sec = tv.tv_sec + (double)tv.tv_usec / 1000000;
+    return sec;
 }
 
 int main(int argc, char *argv[]) {
+    if (argc < 6) {
+        printf("Use following syntax to run program: ./galsim N file_name amount_steps step_length graphics_on \n");
+        return 0;
+    }
     double time = get_timings();
     // Set input parameters
     const int N = atoi(argv[1]);
@@ -37,6 +47,7 @@ int main(int argc, char *argv[]) {
     const double delta_t = atof(argv[4]);
     const int graphics = atoi(argv[5]);
     const int windowWidth=800;
+    int successful;
 
     // Declare variables
     double F_x, F_y, F_const;
@@ -48,23 +59,28 @@ int main(int argc, char *argv[]) {
 
     double *particles = (double*) malloc(N*sizeof(double)*6);
 
-    double *forces = (double*) malloc(2*N*sizeof(double));
+    double forces[2*N];
 
-    set_initial_data(N, &particles, filename);
+    successful = set_initial_data(N, &particles, filename);
 
-    if (graphics == 1) {
+    if (!successful) {
+        printf("Error reading initial data file. \n");
+        return 0;
+    }
+
+    if (graphics != 0) {
         InitializeGraphics(argv[0],windowWidth,windowWidth);
         SetCAxes(0,1);
     }
-    int t;
-    int l;
-    int i;
-    int j;
+    unsigned int t;
+    unsigned int l;
+    unsigned int i;
+    unsigned int j;
     for (t = 0; t < nsteps; t++) {
-        if (graphics == 1) {
+        if (graphics != 0) {
             ClearScreen();
             for (l = 0; l < N; l++) {
-                DrawCircle(particles[l*6+0], particles[l*6+1], 1, 1, particles[l*6+2]*0.001, 0);
+                DrawCircle(particles[l*6+0], particles[l*6+1], 1, 1, particles[l*6+2]*0.002, 0);
             }
             Refresh();
             usleep(2000);
@@ -103,7 +119,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (graphics == 1) {
+    if (graphics != 0) {
         FlushDisplay();
         CloseDisplay();
     }
@@ -115,7 +131,6 @@ int main(int argc, char *argv[]) {
     fclose(ptr);
 
     free(particles);
-    free(forces);
     printf("Galsim program took %7.3f wall seconds.\n", get_timings() - time);
     return 0;
 

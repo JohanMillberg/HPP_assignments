@@ -150,5 +150,6 @@ int main(int argc, char *argv[]) {
     free(particle);
     free(particle_new);
     printf("Galsim program took %7.3f wall seconds.\n", get_timings() - time);
+    printf("No. of iterations %d\n", iterations);
     return 0;
 }
