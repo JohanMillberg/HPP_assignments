@@ -87,6 +87,7 @@ int main(int argc, char *argv[]) {
     // Amount of blocks and blocksize
     const int blocksize = 50;
     const int nBlocks = (2*N)/blocksize;
+    int l_start;
     for (t = 0; t < nsteps; t++) {
         /*
             Draws all particles if graphics are enabled
@@ -102,16 +103,15 @@ int main(int argc, char *argv[]) {
 
         //Utilizes cache blocking if 2*N is divisible by the block size
         if ((2*N) % blocksize == 0) {
-            for (bl = 0; bl < nBlocks; bl += blocksize) {
-                for (l = bl; l < bl + blocksize; l++) {
+            for (bl = 0; bl < nBlocks; bl ++) {
+                l_start = bl*blocksize;
+                for (l = l_start; l < (l_start + blocksize); l++) {
                     forces[l] = 0;
                 }
             }
         }
-        else {
-            for (l = 0; l < 2*N; l++) {
-                forces[l] = 0;
-            }
+        for (l = 0; l < 2*N; l++) {
+            forces[l] = 0;
         }
 
         for (i = 0; i < N; i++) {
