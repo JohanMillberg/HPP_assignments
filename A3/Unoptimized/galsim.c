@@ -2,10 +2,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "graphics.h"
+#include <sys/time.h>
 
 typedef struct particle {
     double pos_x, pos_y, vel_x, vel_y, mass, brightness;
 } particle_t;
+
+/* Method of determining wall seconds was inspired by function get_wall_seconds from Lab6 Task 1 main.c file. */
+double get_timings() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    double seconds = tv.tv_sec + (double)tv.tv_used / 1000000;
+    return seconds;
+}
 
 /*
 Method of reading data from .gal files was inspired by the function read_doubles_from_file
@@ -60,6 +69,8 @@ void Force(int N, int i, particle_t *particle, double arr[]) {
 
 int main(int argc, char *argv[]) {
 
+    double time = get_timings;
+    
     // Set input parameters
     const int N = atoi(argv[1]);
     const char* filename = argv[2];
@@ -141,6 +152,8 @@ int main(int argc, char *argv[]) {
 
     free(particle);
     free(particle_new);
+    
+    printf("Galsim program took %7.3f wall seconds.\n", get_timings() - time);
 
     return 0;
 }
