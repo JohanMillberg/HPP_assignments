@@ -3,24 +3,190 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
+#include <pthread.h>
 #include "graphics.h"
 
+typedef struct particle {
+    double x, y, mass, vel_x, vel_y, brightness;
+} particle_t;
+
+typedef struct tree_node {
+    double q_x, q_y, width, height;
+    struct tree_node* topLeft;
+    struct tree_node* topRight;
+    struct tree_node* botLeft;
+    struct tree_node* botRight;
+    int amount_particles;
+    particle_t* particles;
+} tree_node_t;
+
+void create_node(tree_node_t* node, double x, double y, double width, double height, int N);
+tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position_index);
+void make_tree(tree_node_t* node);
+
+void create_node(tree_node_t* node, double x, double y, double width, double height, int N) {
+    node->q_x = x; node->q_y = y; node->width = width; node->height = height;
+    node->amount_particles = N;
+    node->particles = malloc(N*sizeof(particle_t));
+    node->topLeft = NULL;
+    node->topRight = NULL;
+    node->botLeft = NULL;
+    node->botRight = NULL;
+}
+
+tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position_index) {
+    int i;
+    int x_bool, y_xool;
+    double x_parent, y_parent;
+    create_node(node, 0, 0, 0, 0);
+    node->width = node_parent->width/2;
+    node->height = node_parent->height/2;
+    x_parent = node_parent->q_x;
+    y_parent = node_parent->q_y;
+    switch (position_index) {
+        case 0: {
+            node->q_x = x_parent;
+            node->q_y = y_parent + node->heigth;
+            // Check if the particles are in this quadrant:
+            for (i = 0; i < node_parent->amount_particles - 1; i++) {
+                x_bool = (node_parent->particles[i].x > x_parent &&
+                 node_parent->particles[i].x < x_parent + node->width);
+                y_xool = (node_parent->particles[i].y > y_parent + node->height &&
+                 node_parent->particles[i].y < y_parent + node_parent->height);
+
+                if (x_bool && y_bool) {
+                    node->particles[i].x = node_parent->particles[i].x;
+                    node->particles[i].y = node_parent->particles[i].y;
+                    node->particles[i].mass = node_parent->particles[i].mass;
+                    node->particles[i].vel_x = node_parent->particles[i].vel_x;
+                    node->particles[i].vel_y = node_parent->particles[i].vel_y;
+                    node->particles[i].brightness = node_parent->particles[i].brightness;
+                }
+            }
+            break;
+        }
+        case 1: {
+            node->q_x = x_parent + node->width;
+            node->q_y = y_parent + node->height;
+            for (i = 0; i < node_parent->amount_particles-1; i++) {
+                x_bool = (node_parent->particles[i].x > node->width &&
+                 node_parent->particles[i].x < x_parent + node_parent->width);
+                y_bool = (node_parent->particles[i].y > y_parent + node->height &&
+                 node_parent->particles[i].y < y_parent + node_parent->height);
+
+                if (x_bool && y_bool) {
+                    node->particles[i].x = node_parent->particles[i].x;
+                    node->particles[i].y = node_parent->particles[i].y;
+                    node->particles[i].mass = node_parent->particles[i].mass;
+                    node->particles[i].vel_x = node_parent->particles[i].vel_x;
+                    node->particles[i].vel_y = node_parent->particles[i].vel_y;
+                    node->particles[i].brightness = node_parent->particles[i].brightness;
+                }
+            }
+            break;
+        }
+        case 2: {
+            node->q_x = x_parent;
+            node->q_y = y_parent;
+            for (i = 0; i < node_parent->amount_particles-1; i++) {
+                x_bool = (node_parent->particles[i].x > x_parent &&
+                 node_parent->particles[i].x < x_parent + node->width);
+                y_bool = (node_parent->particles[i].y > y_parent &&
+                 node_parent->particles[i].y < y_parent + node->height);
+
+                if (x_bool && y_bool) {
+                    node->particles[i].x = node_parent->particles[i].x;
+                    node->particles[i].y = node_parent->particles[i].y;
+                    node->particles[i].mass = node_parent->particles[i].mass;
+                    node->particles[i].vel_x = node_parent->particles[i].vel_x;
+                    node->particles[i].vel_y = node_parent->particles[i].vel_y;
+                    node->particles[i].brightness = node_parent->particles[i].brightness;
+                }
+            }
+            break;
+        }
+        case 3: {
+            node->q_x = x_parent + node->width;
+            node->q_y = y_parent;
+            for (i = 0; i < node_parent->amount_particles-1; i++) {
+                x_bool = (node_parent->particles[i].x > node->width &&
+                 node_parent->particles[i].x < x_parent + node_parent->width);
+                y_bool = (node_parent->particles[i].y > y_parent &&
+                 node_parent->particles[i].y < y_parent + node->height);
+
+                if (x_bool && y_bool) {
+                    node->particles[i].x = node_parent->particles[i].x;
+                    node->particles[i].y = node_parent->particles[i].y;
+                    node->particles[i].mass = node_parent->particles[i].mass;
+                    node->particles[i].vel_x = node_parent->particles[i].vel_x;
+                    node->particles[i].vel_y = node_parent->particles[i].vel_y;
+                    node->particles[i].brightness = node_parent->particles[i].brightness;
+                }
+            }
+            break;
+    }
+    
+
+    }
+    return node;
+}
+
+void make_tree(tree_node_t* node) {
+    tree_node_t* new_node = malloc(sizeof(tree_node_t));
+    int n = node->amount_particles;
+
+    if (n > 1) {
+        node->topLeft = malloc(sizeof(tree_node_t));
+        new_node = make_node(node->topLeft, node, 0);
+        make_tree(new_node);
+
+        node->topRight = malloc(sizeof(tree_node_t));
+        new_node = make_node(node->topRight, node, 1);
+        make_tree(new_node);
+
+        node->botLeft = malloc(sizeof(tree_node_t));
+        new_node = make_node(node->botLeft, node, 2);
+        make_tree(new_node);
+
+        node->botRight = malloc(sizeof(tree_node_t));
+        new_node = make_node(node->botRight, node, 3);
+        make_tree(new_node);
+    }
+}
 
 /*
 Method of reading data from .gal files was inspired by the function read_doubles_from_file
 in the given compare_gal_files.c
 */
-int set_initial_data(int N, double** particles, const char* filename) {
+int set_initial_data(int N, particle_t** particles, const char* filename) {
+    int i;
+    double *buffer = (double*) malloc(N*sizeof(double)*6);
     FILE* file = fopen(filename, "rb");
-    if (!file) return 0;
+    if (!file) {
+        free(buffer);
+        return 0;
+    }
     fseek(file, 0L, SEEK_END);
     size_t file_size = ftell(file);
-    if (file_size != 6*N*sizeof(double)) return 0;
+    if (file_size != 6*N*sizeof(double)) {
+        free(buffer);
+        return 0;
+    }
     fseek(file, 0L, SEEK_SET);
 
-    fread(*particles, sizeof(char), file_size, file);
+    fread(buffer, sizeof(char), file_size, file);
 
     fclose(file);
+
+    for (i = 0; i < N; i++) {
+        (*particles)[i].x = buffer[i*6+0];
+        (*particles)[i].y = buffer[i*6+1];
+        (*particles)[i].mass = buffer[i*6+2];
+        (*particles)[i].vel_x = buffer[i*6+3];
+        (*particles)[i].vel_y = buffer[i*6+4];
+        (*particles)[i].brightness = buffer[i*6+5];
+    }
+    free(buffer);
     return 1;
 }
 
@@ -46,7 +212,8 @@ int main(int argc, char *argv[]) {
     const char* filename = argv[2];
     const int nsteps = atoi(argv[3]);
     const double delta_t = atof(argv[4]);
-    const int graphics = atoi(argv[5]);
+    const double theta_max = atof(argv[5]);
+    const int graphics = atoi(argv[6]);
     const int windowWidth=800;
     int successful;
 
@@ -61,13 +228,20 @@ int main(int argc, char *argv[]) {
     const double eps_0 = 0.001;
 
     // Store the properties of all particles in the array particles
-    double *particles = (double*) malloc(N*sizeof(double)*6);
+    particle_t *particles = (particle_t*) malloc(N*sizeof(particle_t));
 
     // The sum of the forces in the x and y direction for each particle is stored in forces
     double forces[2*N];
 
     successful = set_initial_data(N, &particles, filename);
 
+    tree_node_t* root = malloc(sizeof(tree_node_t));
+    create_node(root, 0, 0, 1, 1, N);
+
+    memcpy(root->particles, particles, N*sizeof(particle_t));
+
+
+/*
     if (!successful) {
         printf("Error reading initial data file. \n");
         return 0;
@@ -89,74 +263,7 @@ int main(int argc, char *argv[]) {
     const int nBlocks = (2*N)/blocksize;
     int l_start;
     for (t = 0; t < nsteps; t++) {
-        /*
-            Draws all particles if graphics are enabled
-        */
-        if (graphics != 0) {
-            ClearScreen();
-            for (l = 0; l < N; l++) {
-                DrawCircle(particles[l*6+0], particles[l*6+1], 1, 1, particles[l*6+2]*0.002, 0);
-            }
-            Refresh();
-            usleep(2000);
-        }
 
-        //Utilizes cache blocking if 2*N is divisible by the block size
-        if ((2*N) % blocksize == 0) {
-            for (bl = 0; bl < nBlocks; bl ++) {
-                l_start = bl*blocksize;
-                for (l = l_start; l < (l_start + blocksize); l++) {
-                    forces[l] = 0;
-                }
-            }
-        }
-        else {
-            for (l = 0; l < 2*N; l++) {
-                forces[l] = 0;
-            }
-        }
-
-        for (i = 0; i < N; i++) {
-            x = particles[i*6];
-            y = particles[i*6 + 1];
-            mass = particles[i*6 + 2];
-
-            /*
-                Calculates all forces acting on particle i
-            */
-            for (j = i; j < N; j++) {
-                r_x = x - particles[j*6 + 0];
-                r_y = y - particles[j*6 + 1];
-                r = sqrt(r_x*r_x + r_y*r_y);
-
-                denom = (r + eps_0)*(r + eps_0)*(r + eps_0);
-                F_const = G * mass * (particles[j*6 + 2]/denom);
-                F_x = F_const * r_x;
-                F_y = F_const * r_y;
-
-                /*
-                    Utilize the fact that the forces between the two particles are equal
-                    but acting in the opposite direction, minimizing the needed iterations
-                */
-                forces[i*2 + 0] += F_x;
-                forces[i*2 + 1] += F_y;
-                forces[j*2 + 0] += -F_x;
-                forces[j*2 + 1] += -F_y;
-
-            }
-            // Update the properties of the particle i
-            particles[i*6 + 3] = particles[i*6 + 3] + delta_t*(forces[i*2+0]/particles[i*6 + 2]);
-            particles[i*6 + 4] = particles[i*6 + 4] + delta_t*(forces[i*2+1]/particles[i*6 + 2]);
-
-            particles[i*6 + 0] = particles[i*6 + 0] + delta_t*particles[i*6 + 3];
-            particles[i*6 + 1] = particles[i*6 + 1] + delta_t*particles[i*6 + 4];
-
-        }
-    }
-
-    if (graphics != 0) {
-        FlushDisplay();
-        CloseDisplay();
     }
 
     FILE *ptr;
@@ -168,5 +275,5 @@ int main(int argc, char *argv[]) {
     free(particles);
     printf("Galsim program took %7.3f wall seconds.\n", get_timings() - time);
     return 0;
-
+*/
 }
