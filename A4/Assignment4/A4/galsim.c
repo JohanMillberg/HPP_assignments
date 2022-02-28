@@ -18,11 +18,15 @@ typedef struct tree_node {
     struct tree_node* botRight;
     int amount_particles;
     particle_t* particles;
+    double m;
+    double m_x;
+    double m_y;
 } tree_node_t;
 
 void create_node(tree_node_t* node, double x, double y, double width, double height, int N);
 tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position_index);
 void make_tree(tree_node_t* node);
+void delete_tree(tree_node_t* node);
 
 void create_node(tree_node_t* node, double x, double y, double width, double height, int N) {
     node->q_x = x; node->q_y = y; node->width = width; node->height = height;
@@ -32,139 +36,174 @@ void create_node(tree_node_t* node, double x, double y, double width, double hei
     node->topRight = NULL;
     node->botLeft = NULL;
     node->botRight = NULL;
+    node->m_x = 0;
+    node->m_y = 0;
 }
 
 tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position_index) {
     int i;
+    int j = 0;
     int counter = 0;
     int x_bool, y_bool;
     double x_parent, y_parent;
-    particle_t* eligible_particles;
-    double new_width = node_parent->width/2;
-    double new_height = node_parent->height/2;
+    double new_width = (node_parent->width)/2;
+    double new_height = (node_parent->height)/2;
     double new_x, new_y;
     x_parent = node_parent->q_x;
     y_parent = node_parent->q_y;
+    node->m = 0;
     switch (position_index) {
         case 0: {
             new_x = x_parent;
-            new_y = y_parent + new_height;
+            new_y = y_parent;
             // Check if the particles are in this quadrant:
             for (i = 0; i < node_parent->amount_particles; i++) {
-                x_bool = (node_parent->particles[i].x > x_parent &&
-                 node_parent->particles[i].x <= x_parent + new_width);
-                y_bool = (node_parent->particles[i].y > y_parent + new_height &&
-                 node_parent->particles[i].y <= y_parent + node_parent->height);
+                x_bool = (node_parent->particles[i].x >= x_parent &&
+                 node_parent->particles[i].x < x_parent + new_width);
+
+                y_bool = (node_parent->particles[i].y >= y_parent &&
+                 node_parent->particles[i].y < y_parent + new_height);
+
                 if (x_bool && y_bool) {
+                    node->m += node_parent->particles[i].mass;
                     counter++;
                 }
             }
-
             create_node(node, new_x, new_y, new_width, new_height, counter);
             for (i = 0; i < node_parent->amount_particles; i++) {
-                x_bool = (node_parent->particles[i].x > x_parent &&
-                 node_parent->particles[i].x <= x_parent + new_width);
-                y_bool = (node_parent->particles[i].y > y_parent + new_height &&
-                 node_parent->particles[i].y <= y_parent + node_parent->height);
+                x_bool = (node_parent->particles[i].x >= x_parent &&
+                 node_parent->particles[i].x < x_parent + new_width);
+
+                y_bool = (node_parent->particles[i].y >= y_parent &&
+                 node_parent->particles[i].y < y_parent + new_height);
                 if (x_bool && y_bool) {
-                    node->particles[i].x = node_parent->particles[i].x;
-                    node->particles[i].y = node_parent->particles[i].y;
-                    node->particles[i].mass = node_parent->particles[i].mass;
-                    node->particles[i].vel_x = node_parent->particles[i].vel_x;
-                    node->particles[i].vel_y = node_parent->particles[i].vel_y;
-                    node->particles[i].brightness = node_parent->particles[i].brightness;
+
+                    node->particles[j].x = node_parent->particles[i].x;
+                    node->particles[j].y = node_parent->particles[i].y;
+                    node->particles[j].mass = node_parent->particles[i].mass;
+                    node->particles[j].vel_x = node_parent->particles[i].vel_x;
+                    node->particles[j].vel_y = node_parent->particles[i].vel_y;
+                    node->particles[j].brightness = node_parent->particles[i].brightness;
+
+                    node->m_x += node->particles[j].x*node->particles[j].mass;
+                    node->m_y += node->particles[j].y*node->particles[j].mass;
+                    j++;
                 }
             }
+            node->m_x = node->m_x/node->m;
+            node->m_y = node->m_y/node->m;
             break;
         }
         case 1: {
             new_x = x_parent + new_width;
-            new_y = y_parent + new_height;
+            new_y = y_parent;
             for (i = 0; i < node_parent->amount_particles; i++) {
-                x_bool = (node_parent->particles[i].x > new_width &&
+                x_bool = (node_parent->particles[i].x >= x_parent + new_width &&
                  node_parent->particles[i].x <= x_parent + node_parent->width);
-                y_bool = (node_parent->particles[i].y > y_parent + new_height &&
-                 node_parent->particles[i].y <= y_parent + node_parent->height);
+
+                y_bool = (node_parent->particles[i].y >= y_parent &&
+                 node_parent->particles[i].y < y_parent + new_height);
                 if (x_bool && y_bool) {
+                    node->m += node_parent->particles[i].mass;
                     counter++;
                 }
             }
             create_node(node, new_x, new_y, new_width, new_height, counter);
             for (i = 0; i < node_parent->amount_particles; i++) {
-                x_bool = (node_parent->particles[i].x > x_parent &&
-                 node_parent->particles[i].x <= x_parent + new_width);
-                y_bool = (node_parent->particles[i].y > y_parent + new_height &&
-                 node_parent->particles[i].y <= y_parent + node_parent->height);
+                x_bool = (node_parent->particles[i].x >= x_parent + new_width &&
+                 node_parent->particles[i].x <= x_parent + node_parent->width);
+
+                y_bool = (node_parent->particles[i].y >= y_parent &&
+                 node_parent->particles[i].y < y_parent + new_height);
+
                 if (x_bool && y_bool) {
-                    node->particles[i].x = node_parent->particles[i].x;
-                    node->particles[i].y = node_parent->particles[i].y;
-                    node->particles[i].mass = node_parent->particles[i].mass;
-                    node->particles[i].vel_x = node_parent->particles[i].vel_x;
-                    node->particles[i].vel_y = node_parent->particles[i].vel_y;
-                    node->particles[i].brightness = node_parent->particles[i].brightness;
+                    node->particles[j].x = node_parent->particles[i].x;
+                    node->particles[j].y = node_parent->particles[i].y;
+                    node->particles[j].mass = node_parent->particles[i].mass;
+                    node->particles[j].vel_x = node_parent->particles[i].vel_x;
+                    node->particles[j].vel_y = node_parent->particles[i].vel_y;
+                    node->particles[j].brightness = node_parent->particles[i].brightness;
+                    node->m_x += node->particles[j].x*node->particles[j].mass;
+                    node->m_y += node->particles[j].y*node->particles[j].mass;
+                    j++;
                 }
             }
+            node->m_x = node->m_x/node->m;
+            node->m_y = node->m_y/node->m;
             break;
         }
         case 2: {
             new_x = x_parent;
-            new_y = y_parent;
+            new_y = y_parent + new_height;
             for (i = 0; i < node_parent->amount_particles; i++) {
-                x_bool = (node_parent->particles[i].x > x_parent &&
-                 node_parent->particles[i].x <= x_parent + new_width);
-                y_bool = (node_parent->particles[i].y > y_parent &&
-                 node_parent->particles[i].y <= y_parent + new_height);
+                x_bool = (node_parent->particles[i].x >= x_parent &&
+                 node_parent->particles[i].x < x_parent + new_width);
+
+                y_bool = (node_parent->particles[i].y >= y_parent + new_height &&
+                 node_parent->particles[i].y <= y_parent + node_parent->height);
                 if (x_bool && y_bool) {
+                    node->m += node_parent->particles[i].mass;
                     counter++;
                 }
             }
             create_node(node, new_x, new_y, new_width, new_height, counter);
             for (i = 0; i < node_parent->amount_particles; i++) {
-                x_bool = (node_parent->particles[i].x > x_parent &&
-                 node_parent->particles[i].x <= x_parent + new_width);
-                y_bool = (node_parent->particles[i].y > y_parent + new_height &&
+                x_bool = (node_parent->particles[i].x >= x_parent &&
+                 node_parent->particles[i].x < x_parent + new_width);
+
+                y_bool = (node_parent->particles[i].y >= y_parent + new_height &&
                  node_parent->particles[i].y <= y_parent + node_parent->height);
                 if (x_bool && y_bool) {
-                    node->particles[i].x = node_parent->particles[i].x;
-                    node->particles[i].y = node_parent->particles[i].y;
-                    node->particles[i].mass = node_parent->particles[i].mass;
-                    node->particles[i].vel_x = node_parent->particles[i].vel_x;
-                    node->particles[i].vel_y = node_parent->particles[i].vel_y;
-                    node->particles[i].brightness = node_parent->particles[i].brightness;
+                    node->particles[j].x = node_parent->particles[i].x;
+                    node->particles[j].y = node_parent->particles[i].y;
+                    node->particles[j].mass = node_parent->particles[i].mass;
+                    node->particles[j].vel_x = node_parent->particles[i].vel_x;
+                    node->particles[j].vel_y = node_parent->particles[i].vel_y;
+                    node->particles[j].brightness = node_parent->particles[i].brightness;
+                    node->m_x += node->particles[j].x*node->particles[j].mass;
+                    node->m_y += node->particles[j].y*node->particles[j].mass;
+                    j++;
                 }
             }
+            node->m_x = node->m_x/node->m;
+            node->m_y = node->m_y/node->m;
             break;
         }
         case 3: {
             new_x = x_parent + new_width;
-            new_y = y_parent;
+            new_y = y_parent + new_height;
             for (i = 0; i < node_parent->amount_particles; i++) {
-                x_bool = (node_parent->particles[i].x > new_width &&
+                x_bool = (node_parent->particles[i].x >= x_parent + new_width &&
                  node_parent->particles[i].x <= x_parent + node_parent->width);
-                y_bool = (node_parent->particles[i].y > y_parent &&
-                 node_parent->particles[i].y <= y_parent + new_height);
+                y_bool = (node_parent->particles[i].y >= y_parent + new_height &&
+                 node_parent->particles[i].y <= y_parent + node_parent->height);
                 if (x_bool && y_bool) {
+                    node->m += node_parent->particles[i].mass;
                     counter++;
                 }
             }
             create_node(node, new_x, new_y, new_width, new_height, counter);
             for (i = 0; i < node_parent->amount_particles; i++) {
-                x_bool = (node_parent->particles[i].x > x_parent &&
-                 node_parent->particles[i].x <= x_parent + new_width);
-                y_bool = (node_parent->particles[i].y > y_parent + new_height &&
+                x_bool = (node_parent->particles[i].x >= x_parent + new_width &&
+                 node_parent->particles[i].x <= x_parent + node_parent->width);
+                y_bool = (node_parent->particles[i].y >= y_parent + new_height &&
                  node_parent->particles[i].y <= y_parent + node_parent->height);
                 if (x_bool && y_bool) {
-                    node->particles[i].x = node_parent->particles[i].x;
-                    node->particles[i].y = node_parent->particles[i].y;
-                    node->particles[i].mass = node_parent->particles[i].mass;
-                    node->particles[i].vel_x = node_parent->particles[i].vel_x;
-                    node->particles[i].vel_y = node_parent->particles[i].vel_y;
-                    node->particles[i].brightness = node_parent->particles[i].brightness;
+                    node->particles[j].x = node_parent->particles[i].x;
+                    node->particles[j].y = node_parent->particles[i].y;
+                    node->particles[j].mass = node_parent->particles[i].mass;
+                    node->particles[j].vel_x = node_parent->particles[i].vel_x;
+                    node->particles[j].vel_y = node_parent->particles[i].vel_y;
+                    node->particles[j].brightness = node_parent->particles[i].brightness;
+                    node->m_x += node->particles[j].x*node->particles[j].mass;
+                    node->m_y += node->particles[j].y*node->particles[j].mass;
+                    j++;
                 }
             }
+            node->m_x = node->m_x/node->m;
+            node->m_y = node->m_y/node->m;
             break;
     }
-
 
     }
     return node;
@@ -200,6 +239,7 @@ void print_tree(tree_node_t *node, int level) {
     for (int i = 0; i < level; i++) {
         printf(i == level-1 ? "|-" : " ");
     }
+    printf("Level %d\n", level);
     printf("%d\n", node->amount_particles);
     print_tree(node->topLeft, level+1);
     print_tree(node->topRight, level+1);
@@ -243,6 +283,14 @@ int set_initial_data(int N, particle_t** particles, const char* filename) {
     return 1;
 }
 
+void traverse_tree(tree_node_t* node, double theta_max) {
+    double theta;
+
+}
+
+void delete_tree(tree_node_t* node) {
+    return;
+}
 /*
 get_timings() was inspired by the function get_wall_seconds() from Task 4 in Lab 5
 */
@@ -291,10 +339,6 @@ int main(int argc, char *argv[]) {
     tree_node_t* root = malloc(sizeof(tree_node_t));
     create_node(root, 0, 0, 1, 1, N);
 
-    memcpy(root->particles, particles, N*sizeof(particle_t));
-    make_tree(root);
-    print_tree(root,0);
-/*
     if (!successful) {
         printf("Error reading initial data file. \n");
         return 0;
@@ -311,12 +355,13 @@ int main(int argc, char *argv[]) {
     unsigned int j;
     unsigned int bl;
 
-    // Amount of blocks and blocksize
-    const int blocksize = 50;
-    const int nBlocks = (2*N)/blocksize;
-    int l_start;
     for (t = 0; t < nsteps; t++) {
+        memcpy(root->particles, particles, N*sizeof(particle_t));
+        make_tree(root);
 
+        for (i = 0; i < N; i++) {
+            
+        }
     }
 
     FILE *ptr;
@@ -328,5 +373,5 @@ int main(int argc, char *argv[]) {
     free(particles);
     printf("Galsim program took %7.3f wall seconds.\n", get_timings() - time);
     return 0;
-*/
+
 }
