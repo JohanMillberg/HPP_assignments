@@ -26,7 +26,7 @@ typedef struct tree_node {
 } tree_node_t;
 
 void create_node(tree_node_t* node, double x, double y, double width, double height, int N);
-tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter, int position_index);
+tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position_index);
 void make_tree(tree_node_t* node);
 void delete_tree(tree_node_t* node);
 
@@ -43,9 +43,10 @@ void create_node(tree_node_t* node, double x, double y, double width, double hei
     node->m_y = 0;
 }
 
-tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter, int position_index) {
+tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position_index) {
     int i;
     int j = 0;
+    int counter = 0;
     int x_bool, y_bool;
     double x_parent, y_parent;
     double new_width = (node_parent->width)/2;
@@ -58,7 +59,18 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter,
         case 0: {
             new_x = x_parent;
             new_y = y_parent;
+            // Check if the particles are in this quadrant:
+            for (i = 0; i < node_parent->amount_particles; i++) {
+                x_bool = (node_parent->particles[i].x >= x_parent &&
+                 node_parent->particles[i].x < x_parent + new_width);
 
+                y_bool = (node_parent->particles[i].y >= y_parent &&
+                 node_parent->particles[i].y < y_parent + new_height);
+
+                if (x_bool && y_bool) {
+                    counter++;
+                }
+            }
             create_node(node, new_x, new_y, new_width, new_height, counter);
             for (i = 0; i < node_parent->amount_particles; i++) {
                 x_bool = (node_parent->particles[i].x >= x_parent &&
@@ -87,7 +99,16 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter,
         case 1: {
             new_x = x_parent + new_width;
             new_y = y_parent;
-            
+            for (i = 0; i < node_parent->amount_particles; i++) {
+                x_bool = (node_parent->particles[i].x >= x_parent + new_width &&
+                 node_parent->particles[i].x <= x_parent + node_parent->width);
+
+                y_bool = (node_parent->particles[i].y >= y_parent &&
+                 node_parent->particles[i].y < y_parent + new_height);
+                if (x_bool && y_bool) {
+                    counter++;
+                }
+            }
             create_node(node, new_x, new_y, new_width, new_height, counter);
             for (i = 0; i < node_parent->amount_particles; i++) {
                 x_bool = (node_parent->particles[i].x >= x_parent + new_width &&
@@ -117,7 +138,16 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter,
         case 2: {
             new_x = x_parent;
             new_y = y_parent + new_height;
+            for (i = 0; i < node_parent->amount_particles; i++) {
+                x_bool = (node_parent->particles[i].x >= x_parent &&
+                 node_parent->particles[i].x < x_parent + new_width);
 
+                y_bool = (node_parent->particles[i].y >= y_parent + new_height &&
+                 node_parent->particles[i].y <= y_parent + node_parent->height);
+                if (x_bool && y_bool) {
+                    counter++;
+                }
+            }
             create_node(node, new_x, new_y, new_width, new_height, counter);
             for (i = 0; i < node_parent->amount_particles; i++) {
                 x_bool = (node_parent->particles[i].x >= x_parent &&
@@ -145,7 +175,15 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter,
         case 3: {
             new_x = x_parent + new_width;
             new_y = y_parent + new_height;
-
+            for (i = 0; i < node_parent->amount_particles; i++) {
+                x_bool = (node_parent->particles[i].x >= x_parent + new_width &&
+                 node_parent->particles[i].x <= x_parent + node_parent->width);
+                y_bool = (node_parent->particles[i].y >= y_parent + new_height &&
+                 node_parent->particles[i].y <= y_parent + node_parent->height);
+                if (x_bool && y_bool) {
+                    counter++;
+                }
+            }
             create_node(node, new_x, new_y, new_width, new_height, counter);
             for (i = 0; i < node_parent->amount_particles; i++) {
                 x_bool = (node_parent->particles[i].x >= x_parent + new_width &&
@@ -176,96 +214,41 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter,
 }
 
 void make_tree(tree_node_t* node) {
-    int i;
-    int bool_NW[2], bool_NE[2], bool_SW[2], bool_SE[2];
-    int counter[4];
     tree_node_t* new_node = malloc(sizeof(tree_node_t));
     int n = node->amount_particles;
 
-    for (i = 0; i < 4; i++) {
-        counter[i] = 0;
-    }
+    if (n => 1) {
+        node->topLeft = malloc(sizeof(tree_node_t));
+        new_node = make_node(node->topLeft, node, 0);
+        make_tree(new_node);
 
-    if (n > 1) {
+        node->topRight = malloc(sizeof(tree_node_t));
+        new_node = make_node(node->topRight, node, 1);
+        make_tree(new_node);
 
-            // Check if the particles are in this quadrant:
-        for (i = 0; i < n; i++) {
-            bool_NW[0] = (node->particles[i].x >= node->q_x &&
-                node->particles[i].x < node->q_x + node->width/2);
+        node->botLeft = malloc(sizeof(tree_node_t));
+        new_node = make_node(node->botLeft, node, 2);
+        make_tree(new_node);
 
-            bool_NW[1] = (node->particles[i].y >= node->q_y &&
-                node->particles[i].y < node->q_y + node->height/2);
-
-            if (bool_NW[0] && bool_NW[1]) {
-                counter[0]++;
-            }
-
-            bool_NE[0] = (node->particles[i].x >= node->q_x + node->width/2 &&
-                node->particles[i].x <= node->q_x + node->width);
-
-            bool_NE[1] = (node->particles[i].y >= node->q_y &&
-                node->particles[i].y < node->q_y + node->height/2);
-            if (bool_NE[0] && bool_NE[1]) {
-                counter[1]++;
-            }
-
-            bool_SW[0] = (node->particles[i].x >= node->q_x &&
-                node->particles[i].x < node->q_x + node->width/2);
-
-            bool_SW[1] = (node->particles[i].y >= node->q_y + node->height/2 &&
-                node->particles[i].y <= node->q_y + node->height);
-            if (bool_SW[0] && bool_SW[1]) {
-                counter[2]++;
-            }
-
-            bool_SE[0] = (node->particles[i].x >= node->q_x + node->width/2 &&
-                node->particles[i].x <= node->q_x + node->width);
-
-            bool_SE[1] = (node->particles[i].y >= node->q_y + node->height/2 &&
-                node->particles[i].y <= node->q_y + node->height);
-            if (bool_SE[0] && bool_SE[1]) {
-                counter[3]++;
-            }
-        }
-        if (counter[0] > 0) {
-            node->topLeft = malloc(sizeof(tree_node_t));
-            new_node = make_node(node->topLeft, node, counter[0], 0);
-            make_tree(new_node);
-        }
-
-        if (counter[1] > 0) {
-            node->topRight = malloc(sizeof(tree_node_t));
-            new_node = make_node(node->topRight, node, counter[1], 1);
-            make_tree(new_node);
-        }
-
-        if (counter[2] > 0) {
-            node->botLeft = malloc(sizeof(tree_node_t));
-            new_node = make_node(node->botLeft, node, counter[2], 2);
-            make_tree(new_node);
-        }
-
-        if (counter[3] > 0) {
-            node->botRight = malloc(sizeof(tree_node_t));
-            new_node = make_node(node->botRight, node, counter[3], 3);
-            make_tree(new_node);
-        }
+        node->botRight = malloc(sizeof(tree_node_t));
+        new_node = make_node(node->botRight, node, 3);
+        make_tree(new_node);
     }
 }
 
-void print_tree(tree_node_t *node, int level, int quadrant) {
+void print_tree(tree_node_t *node, int level) {
     if (node == NULL) {
         return;
     }
     for (int i = 0; i < level; i++) {
         printf(i == level-1 ? "|-" : " ");
     }
-    printf("Level %d, quadrant %d\n", level, quadrant);
+    printf("Level %d\n", level);
     printf("%d\n", node->amount_particles);
-    print_tree(node->topLeft, level+1, 1);
-    print_tree(node->topRight, level+1, 2);
-    print_tree(node->botLeft, level+1, 3);
-    print_tree(node->botRight, level+1, 4);
+    print_tree(node->topLeft, level+1);
+    print_tree(node->topRight, level+1);
+    print_tree(node->botLeft, level+1);
+    print_tree(node->botRight, level+1);
 }
 
 /*
