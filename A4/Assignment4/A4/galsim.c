@@ -25,15 +25,16 @@ typedef struct tree_node {
     double m_y;
 } tree_node_t;
 
-void create_node(tree_node_t* node, double x, double y, double width, double height, int N);
-tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter, int position_index);
+tree_node_t* create_node(double x, double y, double width, double height, int N);
+tree_node_t* make_node( tree_node_t* node_parent, int counter, int position_index);
 void make_tree(tree_node_t* node);
 void delete_tree(tree_node_t* node);
 
-void create_node(tree_node_t* node, double x, double y, double width, double height, int N) {
+tree_node_t* create_node(double x, double y, double width, double height, int N) {
+    tree_node_t* node = (tree_node_t*) malloc(sizeof(tree_node_t));
     node->q_x = x; node->q_y = y; node->width = width; node->height = height;
     node->amount_particles = N;
-    node->particles = malloc(N*sizeof(particle_t));
+    node->particles =(particle_t *) malloc(N*sizeof(particle_t));
     node->topLeft = NULL;
     node->topRight = NULL;
     node->botLeft = NULL;
@@ -41,25 +42,27 @@ void create_node(tree_node_t* node, double x, double y, double width, double hei
     node->m = 0;
     node->m_x = 0;
     node->m_y = 0;
+    return node;
 }
 
-tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter, int position_index) {
+tree_node_t* make_node(tree_node_t* node_parent, int counter, int position_index) {
     int i;
     int j = 0;
     int x_bool, y_bool;
     double x_parent, y_parent;
-    double new_width = (node_parent->width)/2;
-    double new_height = (node_parent->height)/2;
+    double new_width = (node_parent->width)/2.0;
+    double new_height = (node_parent->height)/2.0;
     double new_x, new_y;
     x_parent = node_parent->q_x;
     y_parent = node_parent->q_y;
-    
+    tree_node_t* node = NULL;
+
     switch (position_index) {
         case 0: {
             new_x = x_parent;
             new_y = y_parent;
 
-            create_node(node, new_x, new_y, new_width, new_height, counter);
+            node = create_node(new_x, new_y, new_width, new_height, counter);
             for (i = 0; i < node_parent->amount_particles; i++) {
                 x_bool = (node_parent->particles[i].x >= x_parent &&
                  node_parent->particles[i].x < x_parent + new_width);
@@ -87,8 +90,8 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter,
         case 1: {
             new_x = x_parent + new_width;
             new_y = y_parent;
-            
-            create_node(node, new_x, new_y, new_width, new_height, counter);
+
+            node = create_node(new_x, new_y, new_width, new_height, counter);
             for (i = 0; i < node_parent->amount_particles; i++) {
                 x_bool = (node_parent->particles[i].x >= x_parent + new_width &&
                  node_parent->particles[i].x <= x_parent + node_parent->width);
@@ -117,7 +120,7 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter,
             new_x = x_parent;
             new_y = y_parent + new_height;
 
-            create_node(node, new_x, new_y, new_width, new_height, counter);
+            node = create_node(new_x, new_y, new_width, new_height, counter);
             for (i = 0; i < node_parent->amount_particles; i++) {
                 x_bool = (node_parent->particles[i].x >= x_parent &&
                  node_parent->particles[i].x < x_parent + new_width);
@@ -145,7 +148,7 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter,
             new_x = x_parent + new_width;
             new_y = y_parent + new_height;
 
-            create_node(node, new_x, new_y, new_width, new_height, counter);
+            node = create_node(new_x, new_y, new_width, new_height, counter);
             for (i = 0; i < node_parent->amount_particles; i++) {
                 x_bool = (node_parent->particles[i].x >= x_parent + new_width &&
                  node_parent->particles[i].x <= x_parent + node_parent->width);
@@ -177,7 +180,6 @@ void make_tree(tree_node_t* node) {
     int i;
     int bool_NW[2], bool_NE[2], bool_SW[2], bool_SE[2];
     int counter[4];
-    tree_node_t* new_node = malloc(sizeof(tree_node_t));
     int n = node->amount_particles;
 
     for (i = 0; i < 4; i++) {
@@ -185,70 +187,66 @@ void make_tree(tree_node_t* node) {
     }
 
     if (n > 1) {
-
             // Check if the particles are in this quadrant:
         for (i = 0; i < n; i++) {
             bool_NW[0] = (node->particles[i].x >= node->q_x &&
-                node->particles[i].x < node->q_x + node->width/2);
+                node->particles[i].x < node->q_x + node->width/2.0);
 
             bool_NW[1] = (node->particles[i].y >= node->q_y &&
-                node->particles[i].y < node->q_y + node->height/2);
+                node->particles[i].y < node->q_y + node->height/2.0);
 
             if (bool_NW[0] && bool_NW[1]) {
                 counter[0]++;
             }
 
-            bool_NE[0] = (node->particles[i].x >= node->q_x + node->width/2 &&
+            bool_NE[0] = (node->particles[i].x >= node->q_x + node->width/2.0 &&
                 node->particles[i].x <= node->q_x + node->width);
 
             bool_NE[1] = (node->particles[i].y >= node->q_y &&
-                node->particles[i].y < node->q_y + node->height/2);
+                node->particles[i].y < node->q_y + node->height/2.0);
             if (bool_NE[0] && bool_NE[1]) {
                 counter[1]++;
             }
 
             bool_SW[0] = (node->particles[i].x >= node->q_x &&
-                node->particles[i].x < node->q_x + node->width/2);
+                node->particles[i].x < node->q_x + node->width/2.0);
 
-            bool_SW[1] = (node->particles[i].y >= node->q_y + node->height/2 &&
+            bool_SW[1] = (node->particles[i].y >= node->q_y + node->height/2.0 &&
                 node->particles[i].y <= node->q_y + node->height);
             if (bool_SW[0] && bool_SW[1]) {
                 counter[2]++;
             }
 
-            bool_SE[0] = (node->particles[i].x >= node->q_x + node->width/2 &&
+            bool_SE[0] = (node->particles[i].x >= node->q_x + node->width/2.0 &&
                 node->particles[i].x <= node->q_x + node->width);
 
-            bool_SE[1] = (node->particles[i].y >= node->q_y + node->height/2 &&
+            bool_SE[1] = (node->particles[i].y >= node->q_y + node->height/2.0 &&
                 node->particles[i].y <= node->q_y + node->height);
             if (bool_SE[0] && bool_SE[1]) {
                 counter[3]++;
             }
         }
         if (counter[0] > 0) {
-            node->topLeft = malloc(sizeof(tree_node_t));
-            new_node = make_node(node->topLeft, node, counter[0], 0);
-            make_tree(new_node);
+            node->topLeft = make_node(node, counter[0], 0);
+            make_tree(node->topLeft);
         }
 
         if (counter[1] > 0) {
-            node->topRight = malloc(sizeof(tree_node_t));
-            new_node = make_node(node->topRight, node, counter[1], 1);
-            make_tree(new_node);
+            node->topRight = make_node(node, counter[1], 1);
+            make_tree(node->topRight);
         }
 
         if (counter[2] > 0) {
-            node->botLeft = malloc(sizeof(tree_node_t));
-            new_node = make_node(node->botLeft, node, counter[2], 2);
-            make_tree(new_node);
+            node->botLeft = make_node(node, counter[2], 2);
+            make_tree(node->botLeft);
         }
 
         if (counter[3] > 0) {
-            node->botRight = malloc(sizeof(tree_node_t));
-            new_node = make_node(node->botRight, node, counter[3], 3);
-            make_tree(new_node);
+            node->botRight = make_node(node, counter[3], 3);
+            make_tree(node->botRight);
         }
     }
+    return;
 }
 
 void print_tree(tree_node_t *node, int level, int quadrant) {
@@ -307,6 +305,8 @@ void traverse_tree(tree_node_t* node, particle_t particle,
     double theta, F_const;
     double distance_x, distance_y, r;
     double denom;
+    int leaf_nodes_exist;
+    int i;
 
     if (node == NULL) {
         return;
@@ -324,7 +324,11 @@ void traverse_tree(tree_node_t* node, particle_t particle,
     theta = node->width/r;
     //printf("%lf\n", theta);
 
-    if (theta > theta_max) {
+    leaf_nodes_exist = (node->topLeft != NULL || node->topRight != NULL || node->botLeft != NULL ||
+        node->botRight != NULL);
+
+    //printf("%lf\n", theta);
+    if (theta > theta_max && leaf_nodes_exist) {
         traverse_tree(node->topLeft, particle, theta_max, forces_x, forces_y, G);
         traverse_tree(node->topRight, particle, theta_max, forces_x, forces_y, G);
         traverse_tree(node->botLeft, particle, theta_max, forces_x, forces_y, G);
@@ -332,6 +336,7 @@ void traverse_tree(tree_node_t* node, particle_t particle,
     }
 
     else {
+        //printf("Calculating force...\n");
         //Calculate x and y forces here
         denom = (r + eps_0)*(r + eps_0)*(r + eps_0);
         F_const = G * particle.mass * (node->m/denom);
@@ -350,7 +355,6 @@ void delete_tree(tree_node_t* node) {
     delete_tree(node->botLeft);
     delete_tree(node->botRight);
 
-    printf("Deleting node: %d\n", node->amount_particles);
     free(node->particles);
     free(node);
 }
@@ -403,9 +407,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    tree_node_t* root = malloc(sizeof(tree_node_t));
-    create_node(root, 0, 0, 1, 1, N);
-    memcpy(root->particles, particles, N*sizeof(particle_t));
+    tree_node_t* root;
 
     if (graphics != 0) {
         InitializeGraphics(argv[0],windowWidth,windowWidth);
@@ -413,18 +415,14 @@ int main(int argc, char *argv[]) {
     }
     // Declaring iteration variables
     unsigned int t;
-    unsigned int l;
     unsigned int i;
-    unsigned int j;
-    unsigned int bl;
 
     double forces_x;
     double forces_y;
 
-    make_tree(root);
-    print_tree(root, 0, 0);
-
     for (t = 0; t < nsteps; t++) {
+        root = create_node(0, 0, 1, 1, N);
+        memcpy(root->particles, particles, N*sizeof(particle_t));
         make_tree(root);
 
         for (i = 0; i < N; i++) {
@@ -436,20 +434,28 @@ int main(int argc, char *argv[]) {
         }
 
         for (i = 0; i < N; i++) {
-            root->particles[i].vel_x = root->particles[i].vel_x + delta_t*forces[i*2+0]/root->particles[i].mass;
-            root->particles[i].vel_y = root->particles[i].vel_y + delta_t*forces[i*2+1]/root->particles[i].mass;
+            particles[i].vel_x = particles[i].vel_x + delta_t*forces[i*2+0]/particles[i].mass;
+            particles[i].vel_y = particles[i].vel_y + delta_t*forces[i*2+1]/particles[i].mass;
 
-            root->particles[i].x = root->particles[i].x + delta_t * root->particles[i].vel_x;
-            root->particles[i].y = root->particles[i].y + delta_t * root->particles[i].vel_y;
+            particles[i].x = particles[i].x + delta_t * particles[i].vel_x;
+            particles[i].y = particles[i].y + delta_t * particles[i].vel_y;
         }
 
         delete_tree(root);
+        root = NULL;
     }
+
+    // Prints positions for debugging purposes
+    /*
+    for (i = 0; i < N; i++) {
+        printf("(%lf, %lf)\n", particles[i].x, particles[i].y);
+    }
+    */
 
     FILE *ptr;
 
     ptr = fopen("result.gal", "wb");
-    fwrite(particles, N*sizeof(double)*6, 1, ptr); // Write all data to binary file
+    fwrite(particles, N*sizeof(particle_t), 1, ptr); // Write all data to binary file
     fclose(ptr);
 
     free(particles);
