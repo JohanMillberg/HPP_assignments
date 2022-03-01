@@ -6,6 +6,8 @@
 #include <pthread.h>
 #include "graphics.h"
 
+const double eps_0 = 1E-3;
+
 typedef struct particle {
     double x, y, mass, vel_x, vel_y, brightness;
 } particle_t;
@@ -36,6 +38,7 @@ void create_node(tree_node_t* node, double x, double y, double width, double hei
     node->topRight = NULL;
     node->botLeft = NULL;
     node->botRight = NULL;
+    node->m = 0;
     node->m_x = 0;
     node->m_y = 0;
 }
@@ -51,7 +54,7 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position
     double new_x, new_y;
     x_parent = node_parent->q_x;
     y_parent = node_parent->q_y;
-    node->m = 0;
+    
     switch (position_index) {
         case 0: {
             new_x = x_parent;
@@ -65,7 +68,6 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position
                  node_parent->particles[i].y < y_parent + new_height);
 
                 if (x_bool && y_bool) {
-                    node->m += node_parent->particles[i].mass;
                     counter++;
                 }
             }
@@ -84,7 +86,7 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position
                     node->particles[j].vel_x = node_parent->particles[i].vel_x;
                     node->particles[j].vel_y = node_parent->particles[i].vel_y;
                     node->particles[j].brightness = node_parent->particles[i].brightness;
-
+                    node->m += node->particles[j].mass;
                     node->m_x += node->particles[j].x*node->particles[j].mass;
                     node->m_y += node->particles[j].y*node->particles[j].mass;
                     j++;
@@ -104,7 +106,6 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position
                 y_bool = (node_parent->particles[i].y >= y_parent &&
                  node_parent->particles[i].y < y_parent + new_height);
                 if (x_bool && y_bool) {
-                    node->m += node_parent->particles[i].mass;
                     counter++;
                 }
             }
@@ -123,11 +124,13 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position
                     node->particles[j].vel_x = node_parent->particles[i].vel_x;
                     node->particles[j].vel_y = node_parent->particles[i].vel_y;
                     node->particles[j].brightness = node_parent->particles[i].brightness;
+                    node->m += node->particles[j].mass;
                     node->m_x += node->particles[j].x*node->particles[j].mass;
                     node->m_y += node->particles[j].y*node->particles[j].mass;
                     j++;
                 }
             }
+            printf("node->m = %lf\n", node->m);
             node->m_x = node->m_x/node->m;
             node->m_y = node->m_y/node->m;
             break;
@@ -142,7 +145,6 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position
                 y_bool = (node_parent->particles[i].y >= y_parent + new_height &&
                  node_parent->particles[i].y <= y_parent + node_parent->height);
                 if (x_bool && y_bool) {
-                    node->m += node_parent->particles[i].mass;
                     counter++;
                 }
             }
@@ -160,6 +162,7 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position
                     node->particles[j].vel_x = node_parent->particles[i].vel_x;
                     node->particles[j].vel_y = node_parent->particles[i].vel_y;
                     node->particles[j].brightness = node_parent->particles[i].brightness;
+                    node->m += node->particles[j].mass;
                     node->m_x += node->particles[j].x*node->particles[j].mass;
                     node->m_y += node->particles[j].y*node->particles[j].mass;
                     j++;
@@ -178,7 +181,6 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position
                 y_bool = (node_parent->particles[i].y >= y_parent + new_height &&
                  node_parent->particles[i].y <= y_parent + node_parent->height);
                 if (x_bool && y_bool) {
-                    node->m += node_parent->particles[i].mass;
                     counter++;
                 }
             }
@@ -195,11 +197,13 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int position
                     node->particles[j].vel_x = node_parent->particles[i].vel_x;
                     node->particles[j].vel_y = node_parent->particles[i].vel_y;
                     node->particles[j].brightness = node_parent->particles[i].brightness;
+                    node->m += node->particles[j].mass;
                     node->m_x += node->particles[j].x*node->particles[j].mass;
                     node->m_y += node->particles[j].y*node->particles[j].mass;
                     j++;
                 }
             }
+            printf("node->m = %lf\n", node->m);
             node->m_x = node->m_x/node->m;
             node->m_y = node->m_y/node->m;
             break;
@@ -283,9 +287,47 @@ int set_initial_data(int N, particle_t** particles, const char* filename) {
     return 1;
 }
 
-void traverse_tree(tree_node_t* node, double theta_max) {
-    double theta;
+void traverse_tree(tree_node_t* node, particle_t particle,
+    double theta_max, double* forces_x, double*forces_y, double G) {
+    double theta, F_const;
+    double distance_x, distance_y, r;
+    double denom;
+    //printf("node->m_x = %lf\n", node->m_x);
+    distance_x = (particle.x-node->m_x);
+    distance_y = (particle.y-node->m_y);
+    //printf("Distance_x = %lf\n", distance_x);
+    r = sqrt(distance_x*distance_x + distance_y*distance_y);
+    //printf("r = %lf\n", r);
+    //printf("Width = %lf\n", node->width);
+    if (r == 0) {
+        return;
+    }
+    theta = node->width/r;
+    //printf("%lf\n", theta);
+    printf("%lf\n", theta);
 
+    if (theta > theta_max) {
+
+        if (node->topLeft != NULL) {
+            traverse_tree(node->topLeft, particle, theta_max, forces_x, forces_y, G);
+            traverse_tree(node->topRight, particle, theta_max, forces_x, forces_y, G);
+            traverse_tree(node->botLeft, particle, theta_max, forces_x, forces_y, G);
+            traverse_tree(node->botRight, particle, theta_max, forces_x, forces_y, G);
+        }
+
+        else {
+            printf("Reached leaf, theta_max is too small\n");
+            return;
+        }
+    }
+
+    else {
+        //Calculate x and y forces here
+        denom = (r + eps_0)*(r + eps_0)*(r + eps_0);
+        F_const = G * particle.mass * (node->m/denom);
+        (*forces_x) += F_const * distance_x;
+        (*forces_y) += F_const * distance_y;
+    }
 }
 
 void delete_tree(tree_node_t* node) {
@@ -326,23 +368,23 @@ int main(int argc, char *argv[]) {
 
     // Declare constants
     const double G = (double) -100.0 / N;
-    const double eps_0 = 0.001;
 
     // Store the properties of all particles in the array particles
     particle_t *particles = (particle_t*) malloc(N*sizeof(particle_t));
 
     // The sum of the forces in the x and y direction for each particle is stored in forces
-    double forces[2*N];
+    //double forces[2*N];
 
     successful = set_initial_data(N, &particles, filename);
-
-    tree_node_t* root = malloc(sizeof(tree_node_t));
-    create_node(root, 0, 0, 1, 1, N);
 
     if (!successful) {
         printf("Error reading initial data file. \n");
         return 0;
     }
+
+    tree_node_t* root = malloc(sizeof(tree_node_t));
+    create_node(root, 0, 0, 1, 1, N);
+    memcpy(root->particles, particles, N*sizeof(particle_t));
 
     if (graphics != 0) {
         InitializeGraphics(argv[0],windowWidth,windowWidth);
@@ -355,12 +397,16 @@ int main(int argc, char *argv[]) {
     unsigned int j;
     unsigned int bl;
 
+    double forces_x;
+    double forces_y;
+
     for (t = 0; t < nsteps; t++) {
-        memcpy(root->particles, particles, N*sizeof(particle_t));
         make_tree(root);
 
         for (i = 0; i < N; i++) {
-            
+            forces_x = 0;
+            forces_y = 0;
+            traverse_tree(root, root->particles[i], theta_max, &forces_x, &forces_y, G);
         }
     }
 
