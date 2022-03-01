@@ -109,7 +109,6 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter,
                     j++;
                 }
             }
-            printf("node->m = %lf\n", node->m);
             node->m_x = node->m_x/node->m;
             node->m_y = node->m_y/node->m;
             break;
@@ -165,7 +164,6 @@ tree_node_t* make_node(tree_node_t* node, tree_node_t* node_parent, int counter,
                     j++;
                 }
             }
-            printf("node->m = %lf\n", node->m);
             node->m_x = node->m_x/node->m;
             node->m_y = node->m_y/node->m;
             break;
@@ -305,10 +303,14 @@ int set_initial_data(int N, particle_t** particles, const char* filename) {
 }
 
 void traverse_tree(tree_node_t* node, particle_t particle,
-    double theta_max, double* forces_x, double*forces_y, double G) {
+        double theta_max, double* forces_x, double*forces_y, double G) {
     double theta, F_const;
     double distance_x, distance_y, r;
     double denom;
+
+    if (node == NULL) {
+        return;
+    }
     //printf("node->m_x = %lf\n", node->m_x);
     distance_x = (particle.x-node->m_x);
     distance_y = (particle.y-node->m_y);
@@ -321,21 +323,12 @@ void traverse_tree(tree_node_t* node, particle_t particle,
     }
     theta = node->width/r;
     //printf("%lf\n", theta);
-    printf("%lf\n", theta);
 
     if (theta > theta_max) {
-
-        if (node->topLeft != NULL) {
-            traverse_tree(node->topLeft, particle, theta_max, forces_x, forces_y, G);
-            traverse_tree(node->topRight, particle, theta_max, forces_x, forces_y, G);
-            traverse_tree(node->botLeft, particle, theta_max, forces_x, forces_y, G);
-            traverse_tree(node->botRight, particle, theta_max, forces_x, forces_y, G);
-        }
-
-        else {
-            printf("Reached leaf, theta_max is too small\n");
-            return;
-        }
+        traverse_tree(node->topLeft, particle, theta_max, forces_x, forces_y, G);
+        traverse_tree(node->topRight, particle, theta_max, forces_x, forces_y, G);
+        traverse_tree(node->botLeft, particle, theta_max, forces_x, forces_y, G);
+        traverse_tree(node->botRight, particle, theta_max, forces_x, forces_y, G);
     }
 
     else {
@@ -348,7 +341,18 @@ void traverse_tree(tree_node_t* node, particle_t particle,
 }
 
 void delete_tree(tree_node_t* node) {
-    return;
+    if (node == NULL) {
+        return;
+    }
+
+    delete_tree(node->topLeft);
+    delete_tree(node->topRight);
+    delete_tree(node->botLeft);
+    delete_tree(node->botRight);
+
+    printf("Deleting node: %d\n", node->amount_particles);
+    free(node->particles);
+    free(node);
 }
 /*
 get_timings() was inspired by the function get_wall_seconds() from Task 4 in Lab 5
@@ -390,7 +394,7 @@ int main(int argc, char *argv[]) {
     particle_t *particles = (particle_t*) malloc(N*sizeof(particle_t));
 
     // The sum of the forces in the x and y direction for each particle is stored in forces
-    //double forces[2*N];
+    double forces[2*N];
 
     successful = set_initial_data(N, &particles, filename);
 
@@ -417,6 +421,9 @@ int main(int argc, char *argv[]) {
     double forces_x;
     double forces_y;
 
+    make_tree(root);
+    print_tree(root, 0, 0);
+
     for (t = 0; t < nsteps; t++) {
         make_tree(root);
 
@@ -424,7 +431,19 @@ int main(int argc, char *argv[]) {
             forces_x = 0;
             forces_y = 0;
             traverse_tree(root, root->particles[i], theta_max, &forces_x, &forces_y, G);
+            forces[i*2 + 0] = forces_x;
+            forces[i*2 + 1] = forces_y;
         }
+
+        for (i = 0; i < N; i++) {
+            root->particles[i].vel_x = root->particles[i].vel_x + delta_t*forces[i*2+0]/root->particles[i].mass;
+            root->particles[i].vel_y = root->particles[i].vel_y + delta_t*forces[i*2+1]/root->particles[i].mass;
+
+            root->particles[i].x = root->particles[i].x + delta_t * root->particles[i].vel_x;
+            root->particles[i].y = root->particles[i].y + delta_t * root->particles[i].vel_y;
+        }
+
+        delete_tree(root);
     }
 
     FILE *ptr;
