@@ -6,6 +6,8 @@
 #include <pthread.h>
 #include "graphics.h"
 
+#define NUM_THREADS 4
+
 const double eps_0 = 1E-3;
 
 typedef struct particle {
@@ -26,8 +28,14 @@ typedef struct tree_node {
 } tree_node_t;
 
 typedef struct thread_args {
-
-}
+    int start;
+    //int end;
+    double* forces;
+    tree_node_t* root;
+    int amount_of_particles;
+    double theta_max;
+    double G;
+} thread_args_t;
 
 tree_node_t* create_node(double x, double y, double width, double height, int N);
 tree_node_t* make_node( tree_node_t* node_parent, int counter, int position_index);
@@ -241,21 +249,6 @@ void make_tree(tree_node_t* node, int graphics) {
     return;
 }
 
-void print_tree(tree_node_t *node, int level, int quadrant) {
-    if (node == NULL) {
-        return;
-    }
-    for (int i = 0; i < level; i++) {
-        printf(i == level-1 ? "|-" : " ");
-    }
-    printf("Level %d, quadrant %d\n", level, quadrant);
-    printf("%d\n", node->amount_particles);
-    print_tree(node->topLeft, level+1, 1);
-    print_tree(node->topRight, level+1, 2);
-    print_tree(node->botLeft, level+1, 3);
-    print_tree(node->botRight, level+1, 4);
-}
-
 /*
 Method of reading data from .gal files was inspired by the function read_doubles_from_file
 in the given compare_gal_files.c
@@ -346,7 +339,25 @@ void delete_tree(tree_node_t* node) {
 }
 
 void* thread_function(void* arg) {
+    thread_args_t* args = (thread_args_t*) arg;
+    tree_node_t* root = args->root;
+    double* force = args->forces;
+    int start = args->start;
+    //int end = args->end;
+    int amount = args->amount_of_particles;
+    int i;
+    double G = args->G;
+    double theta_max = args->theta_max;
+    double force_x, force_y;
 
+    for (i = 0; i < amount; i++) {
+        force_x = 0;
+        force_y = 0;
+        traverse_tree(root, root->particles[i+start], theta_max, &force_x, &force_y, G);
+        force[i*2+0] = force_x;
+        force[i*2+1] = force_y;
+    }
+    return NULL;
 }
 
 /*
@@ -382,9 +393,6 @@ int main(int argc, char *argv[]) {
     // Store the properties of all particles in the array particles
     particle_t *particles = (particle_t*) malloc(N*sizeof(particle_t));
 
-    // The sum of the forces in the x and y direction for each particle is stored in forces
-    double forces[2*N];
-
     successful = set_initial_data(N, &particles, filename);
 
     if (!successful) {
@@ -402,9 +410,30 @@ int main(int argc, char *argv[]) {
     unsigned int t;
     unsigned int i;
     unsigned int l;
+    unsigned int j;
 
-    double forces_x;
-    double forces_y;
+    //double forces_x;
+    //double forces_y;
+
+    // Thread related declarations
+    pthread_t threads[NUM_THREADS];
+    if (N % NUM_THREADS != 0) {
+        printf("Number of elements is not divisible with number of threads.\n");
+        return 0;
+    }
+    int particles_per_thread = N / NUM_THREADS;
+    thread_args_t** arguments = (thread_args_t**) malloc(NUM_THREADS*sizeof(thread_args_t*));
+
+    for (j = 0; j < NUM_THREADS; j++) {
+        arguments[j] = malloc(sizeof(thread_args_t));
+        arguments[j]->start = j*particles_per_thread;
+        arguments[j]->amount_of_particles = particles_per_thread;
+        arguments[j]->forces = malloc(sizeof(double)*2*particles_per_thread);
+        arguments[j]->root = NULL;
+        arguments[j]->theta_max = theta_max;
+        arguments[j]->G = G;
+
+    }
 
     for (t = 0; t < nsteps; t++) {
         if (graphics != 0) {
@@ -420,20 +449,27 @@ int main(int argc, char *argv[]) {
         memcpy(root->particles, particles, N*sizeof(particle_t));
         make_tree(root, graphics);
 
-        for (i = 0; i < N; i++) {
-            forces_x = 0;
-            forces_y = 0;
-            traverse_tree(root, root->particles[i], theta_max, &forces_x, &forces_y, G);
-            forces[i*2 + 0] = forces_x;
-            forces[i*2 + 1] = forces_y;
+        for (j = 0; j < NUM_THREADS; j++) {
+            arguments[j]->root = root;
+            pthread_create(&threads[j], NULL, thread_function, arguments[j]);
         }
 
-        for (i = 0; i < N; i++) {
-            particles[i].vel_x = particles[i].vel_x + delta_t*forces[i*2+0]/particles[i].mass;
-            particles[i].vel_y = particles[i].vel_y + delta_t*forces[i*2+1]/particles[i].mass;
+        for (j = 0; j < NUM_THREADS; j++) {
+            pthread_join(threads[j], NULL);
+            for (i = 0; i < particles_per_thread; i++) {
+                particles[j*particles_per_thread+i].vel_x = particles[j*particles_per_thread+i].vel_x +
+                    delta_t*arguments[j]->forces[i*2+0]/particles[j*particles_per_thread+i].mass;
 
-            particles[i].x = particles[i].x + delta_t * particles[i].vel_x;
-            particles[i].y = particles[i].y + delta_t * particles[i].vel_y;
+                particles[j*particles_per_thread+i].vel_y = particles[j*particles_per_thread+i].vel_y +
+                    delta_t*arguments[j]->forces[i*2+1]/particles[j*particles_per_thread+i].mass;
+
+                particles[j*particles_per_thread+i].x = particles[j*particles_per_thread+i].x +
+                    delta_t * particles[j*particles_per_thread+i].vel_x;
+
+                particles[j*particles_per_thread+i].y = particles[j*particles_per_thread+i].y +
+                    delta_t * particles[j*particles_per_thread+i].vel_y;
+            }
+            arguments[j]->root = NULL;
         }
 
         delete_tree(root);
@@ -446,7 +482,6 @@ int main(int argc, char *argv[]) {
         printf("(%lf, %lf)\n", particles[i].x, particles[i].y);
     }
     */
-
     if (graphics != 0) {
         FlushDisplay();
         CloseDisplay();
@@ -459,6 +494,12 @@ int main(int argc, char *argv[]) {
     fclose(ptr);
 
     free(particles);
+
+    for (j = 0; j < NUM_THREADS; j++) {
+        free(arguments[j]->forces);
+        free(arguments[j]);
+    }
+    free(arguments);
     printf("Galsim program took %7.3f wall seconds.\n", get_timings() - time);
     return 0;
 
