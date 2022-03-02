@@ -25,9 +25,13 @@ typedef struct tree_node {
     double m_y;
 } tree_node_t;
 
+typedef struct thread_args {
+
+}
+
 tree_node_t* create_node(double x, double y, double width, double height, int N);
 tree_node_t* make_node( tree_node_t* node_parent, int counter, int position_index);
-void make_tree(tree_node_t* node);
+void make_tree(tree_node_t* node, int graphics);
 void delete_tree(tree_node_t* node);
 
 tree_node_t* create_node(double x, double y, double width, double height, int N) {
@@ -74,9 +78,6 @@ tree_node_t* make_node(tree_node_t* node_parent, int counter, int position_index
                     node->particles[j].x = node_parent->particles[i].x;
                     node->particles[j].y = node_parent->particles[i].y;
                     node->particles[j].mass = node_parent->particles[i].mass;
-                    node->particles[j].vel_x = node_parent->particles[i].vel_x;
-                    node->particles[j].vel_y = node_parent->particles[i].vel_y;
-                    node->particles[j].brightness = node_parent->particles[i].brightness;
                     node->m += node->particles[j].mass;
                     node->m_x += node->particles[j].x*node->particles[j].mass;
                     node->m_y += node->particles[j].y*node->particles[j].mass;
@@ -103,9 +104,6 @@ tree_node_t* make_node(tree_node_t* node_parent, int counter, int position_index
                     node->particles[j].x = node_parent->particles[i].x;
                     node->particles[j].y = node_parent->particles[i].y;
                     node->particles[j].mass = node_parent->particles[i].mass;
-                    node->particles[j].vel_x = node_parent->particles[i].vel_x;
-                    node->particles[j].vel_y = node_parent->particles[i].vel_y;
-                    node->particles[j].brightness = node_parent->particles[i].brightness;
                     node->m += node->particles[j].mass;
                     node->m_x += node->particles[j].x*node->particles[j].mass;
                     node->m_y += node->particles[j].y*node->particles[j].mass;
@@ -131,9 +129,6 @@ tree_node_t* make_node(tree_node_t* node_parent, int counter, int position_index
                     node->particles[j].x = node_parent->particles[i].x;
                     node->particles[j].y = node_parent->particles[i].y;
                     node->particles[j].mass = node_parent->particles[i].mass;
-                    node->particles[j].vel_x = node_parent->particles[i].vel_x;
-                    node->particles[j].vel_y = node_parent->particles[i].vel_y;
-                    node->particles[j].brightness = node_parent->particles[i].brightness;
                     node->m += node->particles[j].mass;
                     node->m_x += node->particles[j].x*node->particles[j].mass;
                     node->m_y += node->particles[j].y*node->particles[j].mass;
@@ -158,9 +153,6 @@ tree_node_t* make_node(tree_node_t* node_parent, int counter, int position_index
                     node->particles[j].x = node_parent->particles[i].x;
                     node->particles[j].y = node_parent->particles[i].y;
                     node->particles[j].mass = node_parent->particles[i].mass;
-                    node->particles[j].vel_x = node_parent->particles[i].vel_x;
-                    node->particles[j].vel_y = node_parent->particles[i].vel_y;
-                    node->particles[j].brightness = node_parent->particles[i].brightness;
                     node->m += node->particles[j].mass;
                     node->m_x += node->particles[j].x*node->particles[j].mass;
                     node->m_y += node->particles[j].y*node->particles[j].mass;
@@ -176,7 +168,7 @@ tree_node_t* make_node(tree_node_t* node_parent, int counter, int position_index
     return node;
 }
 
-void make_tree(tree_node_t* node) {
+void make_tree(tree_node_t* node, int graphics) {
     int i;
     int bool_NW[2], bool_NE[2], bool_SW[2], bool_SE[2];
     int counter[4];
@@ -228,22 +220,22 @@ void make_tree(tree_node_t* node) {
         }
         if (counter[0] > 0) {
             node->topLeft = make_node(node, counter[0], 0);
-            make_tree(node->topLeft);
+            make_tree(node->topLeft, graphics);
         }
 
         if (counter[1] > 0) {
             node->topRight = make_node(node, counter[1], 1);
-            make_tree(node->topRight);
+            make_tree(node->topRight, graphics);
         }
 
         if (counter[2] > 0) {
             node->botLeft = make_node(node, counter[2], 2);
-            make_tree(node->botLeft);
+            make_tree(node->botLeft, graphics);
         }
 
         if (counter[3] > 0) {
             node->botRight = make_node(node, counter[3], 3);
-            make_tree(node->botRight);
+            make_tree(node->botRight, graphics);
         }
     }
     return;
@@ -306,28 +298,22 @@ void traverse_tree(tree_node_t* node, particle_t particle,
     double distance_x, distance_y, r;
     double denom;
     int leaf_nodes_exist;
-    int i;
 
     if (node == NULL) {
         return;
     }
-    //printf("node->m_x = %lf\n", node->m_x);
+
     distance_x = (particle.x-node->m_x);
     distance_y = (particle.y-node->m_y);
-    //printf("Distance_x = %lf\n", distance_x);
     r = sqrt(distance_x*distance_x + distance_y*distance_y);
-    //printf("r = %lf\n", r);
-    //printf("Width = %lf\n", node->width);
     if (r == 0) {
         return;
     }
     theta = node->width/r;
-    //printf("%lf\n", theta);
 
     leaf_nodes_exist = (node->topLeft != NULL || node->topRight != NULL || node->botLeft != NULL ||
         node->botRight != NULL);
 
-    //printf("%lf\n", theta);
     if (theta > theta_max && leaf_nodes_exist) {
         traverse_tree(node->topLeft, particle, theta_max, forces_x, forces_y, G);
         traverse_tree(node->topRight, particle, theta_max, forces_x, forces_y, G);
@@ -358,6 +344,11 @@ void delete_tree(tree_node_t* node) {
     free(node->particles);
     free(node);
 }
+
+void* thread_function(void* arg) {
+
+}
+
 /*
 get_timings() was inspired by the function get_wall_seconds() from Task 4 in Lab 5
 */
@@ -385,12 +376,6 @@ int main(int argc, char *argv[]) {
     const int windowWidth=800;
     int successful;
 
-    // Declare variables
-    double F_x, F_y, F_const;
-    double r_x, r_y, r;
-    double x, y, mass;
-    double denom;
-
     // Declare constants
     const double G = (double) -100.0 / N;
 
@@ -416,14 +401,24 @@ int main(int argc, char *argv[]) {
     // Declaring iteration variables
     unsigned int t;
     unsigned int i;
+    unsigned int l;
 
     double forces_x;
     double forces_y;
 
     for (t = 0; t < nsteps; t++) {
+        if (graphics != 0) {
+            ClearScreen();
+            for (l = 0; l < N; l++) {
+                DrawCircle(particles[l].x, particles[l].y, 1, 1, particles[l].mass*0.002, 0);
+            }
+            Refresh();
+            usleep(2000);
+        }
+
         root = create_node(0, 0, 1, 1, N);
         memcpy(root->particles, particles, N*sizeof(particle_t));
-        make_tree(root);
+        make_tree(root, graphics);
 
         for (i = 0; i < N; i++) {
             forces_x = 0;
@@ -451,6 +446,11 @@ int main(int argc, char *argv[]) {
         printf("(%lf, %lf)\n", particles[i].x, particles[i].y);
     }
     */
+
+    if (graphics != 0) {
+        FlushDisplay();
+        CloseDisplay();
+    }
 
     FILE *ptr;
 
