@@ -1,6 +1,6 @@
 CFLAGS=-Wall -O3 -march=native
 INCLUDES=-I/opt/X11/include
-LDFLAGS=-L/opt/X11/lib -lX11 -lm
+LDFLAGS=-L/opt/X11/lib -lX11 -lm -lpthread
 
 galsim: galsim.o graphics.o
 	gcc -o galsim galsim.o graphics.o $(LDFLAGS)
